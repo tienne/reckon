@@ -33,8 +33,9 @@ import (
 // the redis instance listening on a particular host/port with a specified
 // number/percentage of random keys.
 type Options struct {
-	Host string
-	Port int
+	Host     string
+	Port     int
+	Password string
 
 	// MinSamples indicates the minimum number of random keys to sample from the redis
 	// instance.  Note that this does not mean **unique** keys, just an absolute
@@ -301,6 +302,14 @@ func Run(opts Options, aggregator Aggregator) (map[string]*Results, int64, error
 	conn, err := redis.Dial("tcp", net.JoinHostPort(opts.Host, strconv.Itoa(opts.Port)))
 	if err != nil {
 		return stats, keys, fmt.Errorf("Error connecting to the redis instance at: %s:%d : %s", opts.Host, opts.Port, err.Error())
+	}
+
+	if opts.Password != "" {
+		_, err := conn.Do("AUTH", opts.Password)
+
+		if err != nil {
+			return stats, keys, err
+		}
 	}
 
 	numSamples := opts.MinSamples
